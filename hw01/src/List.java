@@ -57,6 +57,9 @@ public class List {
      * @return removed value if key was found, null otherwise
      */
     public String removeKey(String key) {
+        if (head == null) {
+            return null;
+        }
         if (key.equals(head.key)) {
             String tmp = head.value;
             head = head.next;

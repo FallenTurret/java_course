@@ -13,6 +13,9 @@ public class HashMap {
      */
     public HashMap() {
         buckets = new List[mod];
+        for (int i = 0; i < mod; i++) {
+            buckets[i] = new List();
+        }
         size = 0;
     }
 
