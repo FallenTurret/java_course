@@ -1,3 +1,7 @@
+/**
+ * Linked list, which contains pair of strings - key and value
+ * Should contain no more than one value for the same key
+ */
 public class List {
 
     private class ListElement {
@@ -13,16 +17,29 @@ public class List {
 
     private ListElement head;
 
+    /**
+     * Constructs empty list
+     */
     public List() {
         head = null;
     }
 
+    /**
+     * adds new pair of strings to the beginning
+     * @param key
+     * @param value
+     */
     public void addElement(String key, String value) {
         var newHead = new ListElement(key, value);
         newHead.next = head;
         head = newHead;
     }
 
+    /**
+     * searches for value by given key
+     * @param key
+     * @return value if key was found, null otherwise
+     */
     public String getValue(String key) {
         ListElement curElement = head;
         while (curElement != null) {
@@ -34,6 +51,11 @@ public class List {
         return null;
     }
 
+    /**
+     * removes value, paired with given key
+     * @param key
+     * @return removed value if key was found, null otherwise
+     */
     public String removeKey(String key) {
         if (key.equals(head.key)) {
             String tmp = head.value;
