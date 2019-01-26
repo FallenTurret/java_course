@@ -1,5 +1,6 @@
-class List {
-    class ListElement {
+public class List {
+
+    private class ListElement {
         String key;
         String value;
         ListElement next;
@@ -9,17 +10,21 @@ class List {
             next = null;
         }
     }
+
     private ListElement head;
-    List() {
+
+    public List() {
         head = null;
     }
-    void addElement(String key, String value) {
+
+    public void addElement(String key, String value) {
         var newHead = new ListElement(key, value);
         newHead.next = head;
         head = newHead;
     }
-    String getValue(String key) {
-        var curElement = head;
+
+    public String getValue(String key) {
+        ListElement curElement = head;
         while (curElement != null) {
             if (key.equals(curElement.key)) {
                 return curElement.value;
@@ -28,18 +33,22 @@ class List {
         }
         return null;
     }
-    void removeKey(String key) {
+
+    public String removeKey(String key) {
         if (key.equals(head.key)) {
+            String tmp = head.value;
             head = head.next;
-            return;
+            return tmp;
         }
-        var curElement = head;
+        ListElement curElement = head;
         while (curElement.next != null) {
             if (key.equals(curElement.next.key)) {
+                String tmp = curElement.next.value;
                 curElement.next = curElement.next.next;
-                return;
+                return tmp;
             }
             curElement = curElement.next;
         }
+        return null;
     }
 }
