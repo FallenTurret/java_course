@@ -26,8 +26,8 @@ public class List {
 
     /**
      * adds new pair of strings to the beginning
-     * @param key
-     * @param value
+     * @param key any string
+     * @param value any string
      */
     public void addElement(String key, String value) {
         var newHead = new ListElement(key, value);
@@ -37,7 +37,7 @@ public class List {
 
     /**
      * searches for value by given key
-     * @param key
+     * @param key any string
      * @return value if key was found, null otherwise
      */
     public String getValue(String key) {
@@ -53,7 +53,7 @@ public class List {
 
     /**
      * removes value, paired with given key
-     * @param key
+     * @param key any string
      * @return removed value if key was found, null otherwise
      */
     public String removeKey(String key) {

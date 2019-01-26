@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="e292b16c-c752-4083-a143-33db1338ac5d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/src/HashMap.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/HashMap.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/List.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/List.java" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
@@ -14,11 +13,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/List.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-495">
-              <caret line="3" column="3" lean-forward="true" selection-start-line="3" selection-start-column="3" selection-end-line="3" selection-end-column="3" />
+            <state relative-caret-position="330">
+              <caret line="75" column="1" lean-forward="true" selection-start-line="75" selection-start-column="1" selection-end-line="75" selection-end-column="1" />
               <folding>
                 <element signature="e#273#274#0" expanded="true" />
                 <element signature="e#300#301#0" expanded="true" />
@@ -27,11 +26,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/HashMap.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="135">
-              <caret line="9" lean-forward="true" selection-start-line="9" selection-end-line="9" />
+            <state relative-caret-position="240">
+              <caret line="16" column="5" lean-forward="true" selection-start-line="16" selection-start-column="5" selection-end-line="16" selection-end-column="5" />
               <folding>
                 <element signature="e#256#257#0" expanded="true" />
                 <element signature="e#315#316#0" expanded="true" />
@@ -55,8 +54,8 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/src/List.java" />
         <option value="$PROJECT_DIR$/src/HashMap.java" />
+        <option value="$PROJECT_DIR$/src/List.java" />
       </list>
     </option>
   </component>
@@ -117,7 +116,7 @@
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="aspect.path.notification.shown" value="true" />
-    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1548520976021" />
+    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1548521154734" />
     <property name="com.intellij.ide.scratch.LRUPopupBuilder$1/New Scratch File" value="JAVA" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
@@ -152,12 +151,12 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1548511846504</updated>
-      <workItem from="1548511855870" duration="9117000" />
+      <workItem from="1548511855870" duration="9374000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="9117000" />
+    <option name="totallyTimeSpent" value="9374000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -180,7 +179,7 @@
       <window_info content_ui="combo" id="Project" order="0" weight="0.24980047" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="bottom" id="Run Dashboard" />
-      <window_info anchor="bottom" id="Terminal" sideWeight="0.49960095" weight="0.32899022" />
+      <window_info active="true" anchor="bottom" id="Terminal" sideWeight="0.49960095" visible="true" weight="0.32899022" />
       <window_info anchor="bottom" id="Docker" show_stripe_button="false" />
       <window_info anchor="bottom" id="Event Log" sideWeight="0.50039905" side_tool="true" weight="0.32899022" />
       <window_info anchor="bottom" id="Database Changes" />
@@ -247,26 +246,26 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/List.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-495">
-          <caret line="3" column="3" lean-forward="true" selection-start-line="3" selection-start-column="3" selection-end-line="3" selection-end-column="3" />
-          <folding>
-            <element signature="e#273#274#0" expanded="true" />
-            <element signature="e#300#301#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/HashMap.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="135">
-          <caret line="9" lean-forward="true" selection-start-line="9" selection-end-line="9" />
+        <state relative-caret-position="240">
+          <caret line="16" column="5" lean-forward="true" selection-start-line="16" selection-start-column="5" selection-end-line="16" selection-end-column="5" />
           <folding>
             <element signature="e#256#257#0" expanded="true" />
             <element signature="e#315#316#0" expanded="true" />
             <element signature="e#504#505#0" expanded="true" />
             <element signature="e#531#532#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/List.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="330">
+          <caret line="75" column="1" lean-forward="true" selection-start-line="75" selection-start-column="1" selection-end-line="75" selection-end-column="1" />
+          <folding>
+            <element signature="e#273#274#0" expanded="true" />
+            <element signature="e#300#301#0" expanded="true" />
           </folding>
         </state>
       </provider>
