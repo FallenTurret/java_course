@@ -1,3 +1,5 @@
+package hse.hw01.list;
+
 /**
  * Linked list, which contains pair of strings - key and value
  * Should contain no more than one value for the same key
@@ -5,12 +7,12 @@
 public class List {
 
     private class ListElement {
-        String key;
-        String value;
-        ListElement next;
-        ListElement(String k, String v) {
-            key = k;
-            value = v;
+        private String key;
+        private String value;
+        private ListElement next;
+        ListElement(String keyOfElement, String valueOfElement) {
+            key = keyOfElement;
+            value = valueOfElement;
             next = null;
         }
     }
@@ -75,5 +77,19 @@ public class List {
             curElement = curElement.next;
         }
         return null;
+    }
+
+    /**
+     * pops head of the list
+     * @return array with key and value of first element in list
+     */
+    public String[] getHead() {
+        if (head == null) {
+            return null;
+        }
+        var newHead = head.next;
+        var headPair = new String[] {head.key, head.value};
+        head = newHead;
+        return headPair;
     }
 }
