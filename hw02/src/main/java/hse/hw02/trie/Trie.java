@@ -1,14 +1,45 @@
 package hse.hw02.trie;
 
-public class Trie {
+import hse.hw02.serializable.Serializable;
 
-    public class TrieNode {
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
-        private TrieNode next[];
+public class Trie implements Serializable {
+
+    private class TrieNode implements Serializable {
+
+        private TrieNode[] next;
         private int strings = 0;
 
-        public TrieNode(int alphabet) {
+        private TrieNode(int alphabet) {
             next = new TrieNode[alphabet];
+        }
+
+        public void serialize(OutputStream out) throws IOException {
+            byte[] bytes = ByteBuffer.allocate(4).putInt(strings).array();
+            out.write(bytes);
+            for (var curSon : next) {
+                if (curSon == null) {
+                    out.write(0);
+                } else {
+                    out.write(1);
+                    curSon.serialize(out);
+                }
+            }
+        }
+
+        public void deserialize(InputStream in) throws IOException {
+            byte[] bytes = in.readNBytes(4);
+            strings = ByteBuffer.wrap(bytes).getInt();
+            for (int i = 0; i < next.length; i++) {
+                if (in.read() == 1) {
+                    next[i] = new TrieNode(next.length);
+                    next[i].deserialize(in);
+                }
+            }
         }
     }
 
@@ -25,7 +56,7 @@ public class Trie {
         var curNode = root;
         var newString = false;
         for (var symbol : element.toCharArray()) {
-            var index = symbol - ALPHABET;
+            var index = symbol - START;
             if (curNode.next[index] == null) {
                 curNode.next[index] = new TrieNode(ALPHABET);
                 newString = true;
@@ -39,7 +70,7 @@ public class Trie {
     public boolean contains(String element) {
         var curNode = root;
         for (var symbol : element.toCharArray()) {
-            var index = symbol - ALPHABET;
+            var index = symbol - START;
             if (curNode.next[index] == null) {
                 return false;
             }
@@ -55,7 +86,7 @@ public class Trie {
         root.strings--;
         var curNode = root;
         for (var symbol : element.toCharArray()) {
-            var index = symbol - ALPHABET;
+            var index = symbol - START;
             if (curNode.next[index].strings == 1) {
                 curNode.next[index] = null;
                 break;
@@ -63,6 +94,7 @@ public class Trie {
             curNode = curNode.next[index];
             curNode.strings--;
         }
+        return true;
     }
 
     public int size() {
@@ -72,12 +104,20 @@ public class Trie {
     public int howManyStartsWithPrefix(String prefix) {
         var curNode = root;
         for (var symbol : prefix.toCharArray()) {
-            var index = symbol - ALPHABET;
+            var index = symbol - START;
             if (curNode.next[index] == null) {
                 return 0;
             }
             curNode = curNode.next[index];
         }
         return curNode.strings;
+    }
+
+    public void serialize(OutputStream out) throws IOException {
+        root.serialize(out);
+    }
+
+    public void deserialize(InputStream in) throws IOException {
+        root.deserialize(in);
     }
 }
