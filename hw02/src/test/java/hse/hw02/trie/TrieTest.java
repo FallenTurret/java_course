@@ -45,9 +45,9 @@ class TrieTest {
         assertFalse(trie.remove("abc"));
         trie.add("abc");
         trie.add("abc");
-        assertTrue(trie.contains("abc"));
-        assertTrue(trie.contains("abc"));
-        assertFalse(trie.contains("abc"));
+        assertTrue(trie.remove("abc"));
+        assertTrue(trie.remove("abc"));
+        assertFalse(trie.remove("abc"));
     }
 
     @Test
@@ -76,7 +76,7 @@ class TrieTest {
         trie.add("ac");
         assertEquals(3, trie.howManyStartsWithPrefix("ab"));
         trie.remove("abc");
-        assertEquals(2, trie.howManyStartsWithPrefix("abc"));
+        assertEquals(2, trie.howManyStartsWithPrefix("ab"));
     }
 
     @Test
@@ -92,6 +92,6 @@ class TrieTest {
         var in = new ByteArrayInputStream(out.toByteArray());
         var trie2 = new Trie();
         trie2.deserialize(in);
-        assertEquals(trie, trie2);
+        assertTrue(trie.equals(trie2));
     }
 }

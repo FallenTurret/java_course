@@ -16,6 +16,7 @@ public class Trie implements Serializable {
 
         private TrieNode[] next;
         private int strings = 0;
+        private int occurrences = 0;
 
         private TrieNode(int alphabet) {
             next = new TrieNode[alphabet];
@@ -25,7 +26,7 @@ public class Trie implements Serializable {
             if (node == null) {
                 return false;
             }
-            if (strings != node.strings) {
+            if (strings != node.strings || occurrences != node.occurrences) {
                 return false;
             }
             for (int i = 0; i < next.length; i++) {
@@ -43,7 +44,7 @@ public class Trie implements Serializable {
         }
 
         public void serialize(OutputStream out) throws IOException {
-            byte[] bytes = ByteBuffer.allocate(4).putInt(strings).array();
+            byte[] bytes = ByteBuffer.allocate(8).putInt(strings).putInt(occurrences).array();
             out.write(bytes);
             for (var curChild: next) {
                 if (curChild == null) {
@@ -58,6 +59,8 @@ public class Trie implements Serializable {
         public void deserialize(InputStream in) throws IOException {
             byte[] bytes = in.readNBytes(4);
             strings = ByteBuffer.wrap(bytes).getInt();
+            bytes = in.readNBytes(4);
+            occurrences = ByteBuffer.wrap(bytes).getInt();
             for (int i = 0; i < next.length; i++) {
                 if (in.read() == 1) {
                     next[i] = new TrieNode(next.length);
@@ -105,6 +108,7 @@ public class Trie implements Serializable {
             curNode = curNode.next[index];
             curNode.strings++;
         }
+        curNode.occurrences++;
         return newString;
     }
 
@@ -122,7 +126,7 @@ public class Trie implements Serializable {
             }
             curNode = curNode.next[index];
         }
-        return true;
+        return curNode.occurrences > 0;
     }
 
     /**
@@ -145,6 +149,7 @@ public class Trie implements Serializable {
             curNode = curNode.next[index];
             curNode.strings--;
         }
+        curNode.occurrences--;
         return true;
     }
 
