@@ -21,15 +21,36 @@ public class Trie implements Serializable {
             next = new TrieNode[alphabet];
         }
 
+        private boolean equals(TrieNode node) {
+            if (node == null) {
+                return false;
+            }
+            if (strings != node.strings) {
+                return false;
+            }
+            for (int i = 0; i < next.length; i++) {
+                if (next[i] == null && node.next[i] == null) {
+                    continue;
+                }
+                if (next[i] == null || node.next[i] == null) {
+                    return false;
+                }
+                if (!next[i].equals(node.next[i])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         public void serialize(OutputStream out) throws IOException {
             byte[] bytes = ByteBuffer.allocate(4).putInt(strings).array();
             out.write(bytes);
-            for (var curSon : next) {
-                if (curSon == null) {
+            for (var curChild: next) {
+                if (curChild == null) {
                     out.write(0);
                 } else {
                     out.write(1);
-                    curSon.serialize(out);
+                    curChild.serialize(out);
                 }
             }
         }
@@ -58,6 +79,15 @@ public class Trie implements Serializable {
     }
 
     /**
+     * check equivalence with given trie
+     * @param trie any trie
+     * @return true if structure the same, otherwise false
+     */
+    public boolean equals(Trie trie) {
+        return root.equals(trie.root);
+    }
+
+    /**
      * adds new string to trie, increases number of occurrences if it was there
      * @param element any string with latin small letters
      * @return true if unique string was added, otherwise false
@@ -66,7 +96,7 @@ public class Trie implements Serializable {
         root.strings++;
         var curNode = root;
         var newString = false;
-        for (var symbol : element.toCharArray()) {
+        for (var symbol: element.toCharArray()) {
             var index = symbol - START;
             if (curNode.next[index] == null) {
                 curNode.next[index] = new TrieNode(ALPHABET);
@@ -85,7 +115,7 @@ public class Trie implements Serializable {
      */
     public boolean contains(String element) {
         var curNode = root;
-        for (var symbol : element.toCharArray()) {
+        for (var symbol: element.toCharArray()) {
             var index = symbol - START;
             if (curNode.next[index] == null) {
                 return false;
@@ -106,7 +136,7 @@ public class Trie implements Serializable {
         }
         root.strings--;
         var curNode = root;
-        for (var symbol : element.toCharArray()) {
+        for (var symbol: element.toCharArray()) {
             var index = symbol - START;
             if (curNode.next[index].strings == 1) {
                 curNode.next[index] = null;
@@ -146,7 +176,7 @@ public class Trie implements Serializable {
     /**
      * writes byte representation of trie to output stream
      * @param out opened output stream
-     * @throws IOException
+     * @throws IOException in case of problems with stream
      */
     public void serialize(OutputStream out) throws IOException {
         root.serialize(out);
@@ -155,7 +185,7 @@ public class Trie implements Serializable {
     /**
      * constructs trie from given byte representation in input stream
      * @param in opened input stream with byte representation in format of serialize method
-     * @throws IOException
+     * @throws IOException in case of problems with stream or wrong format
      */
     public void deserialize(InputStream in) throws IOException {
         root.deserialize(in);
