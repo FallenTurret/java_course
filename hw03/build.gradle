@@ -11,6 +11,7 @@ repositories {
 }
 
 dependencies {
+    compile 'com.intellij:annotations:+@jar'
     testImplementation(
             'org.junit.jupiter:junit-jupiter-api:5.1.0'
     )
