@@ -3,6 +3,8 @@ os:
   - linux
 jdk:
   - openjdk11
+branches:
+  - /.*/
 env:
   - PROJECT_DIR=hw01
   - PROJECT_DIR=hw02
