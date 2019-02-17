@@ -1,0 +1,10 @@
+language: java
+os:
+  - linux
+jdk:
+  - openjdk11
+branches:
+  - /.*/
+env:
+  - PROJECT_DIR=hw02
+script: cd $PROJECT_DIR && ./gradlew check
