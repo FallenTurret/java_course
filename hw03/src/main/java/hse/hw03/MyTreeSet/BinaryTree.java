@@ -5,15 +5,16 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
+import static java.util.Comparator.naturalOrder;
+
 /**
  * class with the same interface as TreeSet, contains minimal complete implementation
  * stores elements in binary set tree
  * @param <E> type of stored elements
  */
-public class BinaryTree<E extends Comparable<? super E>> implements MyTreeSet<E> {
+public class BinaryTree<E> implements MyTreeSet<E> {
 
     private class TreeNode {
-
         private E value;
         private TreeNode left = null;
         private TreeNode right = null;
@@ -61,33 +62,17 @@ public class BinaryTree<E extends Comparable<? super E>> implements MyTreeSet<E>
                 }
             }
         }
-
-        private void reverse() {
-            var tmp = right;
-            right = left;
-            left = tmp;
-            if (left != null) {
-                left.reverse();
-            }
-            if (right != null) {
-                right.reverse();
-            }
-        }
     }
 
-    /**
-     * iterator for BinaryTree
-     */
-    public class TreeIterator implements Iterator<E> {
+    private class TreeIterator implements Iterator<E> {
 
         private int position = 0;
-        private int step = 1;
 
         /**
          * {@link Iterator#hasNext()}
          */
         public boolean hasNext() {
-            return (root != null && 0 <= position && root.size >= position + 1);
+            return (root != null && root.size > position);
         }
 
         /**
@@ -97,27 +82,33 @@ public class BinaryTree<E extends Comparable<? super E>> implements MyTreeSet<E>
             if (!hasNext()) {
                 throw new NoSuchElementException();
             }
-            var tmp = root.valueByPosition(position);
-            position += step;
+            E tmp;
+            if (!reversed) {
+                tmp = root.valueByPosition(position);
+            } else {
+                tmp = root.valueByPosition(root.size - 1 - position);
+            }
+            position++;
             return tmp;
         }
     }
 
     private TreeNode root = null;
-    private Comparator<E> comparator;
+    private Comparator<? super E> comparator;
+    private boolean reversed = false;
 
     /**
      * constructs new binary tree with default comparator
      */
     public BinaryTree() {
-        comparator = Comparator.naturalOrder();
+        comparator = (Comparator<E>) Comparator.naturalOrder();
     }
 
     /**
      * constructs new binary tree with given comparator
      * @param comparator to compare stored elements
      */
-    public BinaryTree(@Nullable Comparator<E> comparator) {
+    public BinaryTree(@NotNull Comparator<? super E> comparator) {
         this.comparator = comparator;
     }
 
@@ -144,7 +135,7 @@ public class BinaryTree<E extends Comparable<? super E>> implements MyTreeSet<E>
     public boolean contains(@NotNull Object o) {
         TreeNode curNode = root;
         while (curNode != null) {
-            if (curNode.value.equals(o)) {
+            if (comparator.compare(curNode.value, (E) o) == 0) {
                 return true;
             }
             if (comparator.compare(curNode.value, (E) o) > 0) {
@@ -202,12 +193,13 @@ public class BinaryTree<E extends Comparable<? super E>> implements MyTreeSet<E>
      * {@link TreeSet#add(Object)}
      */
     public boolean add(@NotNull E e) {
+        if (contains(e)) {
+            return false;
+        }
         var curNode = root;
         TreeNode parent = null;
         while (curNode != null) {
-            if (curNode.value.equals(e)) {
-                return false;
-            }
+            curNode.size++;
             parent = curNode;
             if (comparator.compare(curNode.value, e) > 0) {
                 curNode = curNode.left;
@@ -222,15 +214,6 @@ public class BinaryTree<E extends Comparable<? super E>> implements MyTreeSet<E>
                 parent.left = new TreeNode(e);
             } else {
                 parent.right = new TreeNode(e);
-            }
-        }
-        curNode = root;
-        while (!curNode.value.equals(e)) {
-            curNode.size++;
-            if (comparator.compare(curNode.value, e) > 0) {
-                curNode = curNode.left;
-            } else {
-                curNode = curNode.right;
             }
         }
         return true;
@@ -258,7 +241,7 @@ public class BinaryTree<E extends Comparable<? super E>> implements MyTreeSet<E>
         var curNode = root;
         TreeNode parent = null;
         while (curNode != null) {
-            if (curNode.value.equals(o)) {
+            if (comparator.compare(curNode.value, (E) o) == 0) {
                 if (parent == null) {
                     root = merge(curNode.left, curNode.right);
                 } else {
@@ -356,20 +339,16 @@ public class BinaryTree<E extends Comparable<? super E>> implements MyTreeSet<E>
      * {@link TreeSet#descendingIterator()}
      **/
     public Iterator<E> descendingIterator() {
-        var iterator = new TreeIterator();
-        iterator.position = size() - 1;
-        iterator.step = -1;
-        return iterator;
+        return descendingSet().iterator();
     }
 
     /**
      * {@link TreeSet#descendingSet()}
      **/
     public MyTreeSet<E> descendingSet() {
-        var rootReversed = root;
-        rootReversed.reverse();
         var newSet = new BinaryTree<E>();
-        newSet.root = rootReversed;
+        newSet.root = root;
+        newSet.reversed = true;
         return newSet;
     }
 
@@ -377,6 +356,12 @@ public class BinaryTree<E extends Comparable<? super E>> implements MyTreeSet<E>
      * {@link TreeSet#first()}
      **/
     public E first() {
+        if (reversed) {
+            reversed = false;
+            var value = last();
+            reversed = true;
+            return value;
+        }
         if (root == null) {
             throw new NoSuchElementException();
         }
@@ -387,6 +372,12 @@ public class BinaryTree<E extends Comparable<? super E>> implements MyTreeSet<E>
      * {@link TreeSet#last()}
      **/
     public E last() {
+        if (reversed) {
+            reversed = false;
+            var value = first();
+            reversed = true;
+            return value;
+        }
         if (root == null) {
             throw new NoSuchElementException();
         }
@@ -397,6 +388,12 @@ public class BinaryTree<E extends Comparable<? super E>> implements MyTreeSet<E>
      * {@link TreeSet#lower(Object)}
      **/
     public E lower(E e) {
+        if (reversed) {
+            reversed = false;
+            var value = higher(e);
+            reversed = true;
+            return value;
+        }
         if (root == null) {
             return null;
         }
@@ -411,6 +408,18 @@ public class BinaryTree<E extends Comparable<? super E>> implements MyTreeSet<E>
      * {@link TreeSet#floor(Object)}
      **/
     public E floor(E e) {
+        if (reversed) {
+            reversed = false;
+            var value = ceiling(e);
+            reversed = true;
+            return value;
+        }
+        if (reversed) {
+            reversed = false;
+            var value = first();
+            reversed = false;
+            return value;
+        }
         if (contains(e)) {
             return e;
         }
@@ -421,6 +430,12 @@ public class BinaryTree<E extends Comparable<? super E>> implements MyTreeSet<E>
      * {@link TreeSet#ceiling(Object)}
      **/
     public E ceiling(E e) {
+        if (reversed) {
+            reversed = false;
+            var value = floor(e);
+            reversed = true;
+            return value;
+        }
         if (root == null) {
             return null;
         }
@@ -432,6 +447,12 @@ public class BinaryTree<E extends Comparable<? super E>> implements MyTreeSet<E>
      * {@link TreeSet#higher(Object)}
      **/
     public E higher(E e) {
+        if (reversed) {
+            reversed = false;
+            var value = lower(e);
+            reversed = true;
+            return value;
+        }
         if (root == null) {
             return null;
         }
