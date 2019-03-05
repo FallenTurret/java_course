@@ -5,8 +5,17 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.*;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Reflector {
+
+    private static final Set<Type> WRAPPER_TYPES = new HashSet<>(Arrays.asList(
+            Boolean.TYPE, Character.TYPE, Byte.TYPE, Short.TYPE, Integer.TYPE,
+            Long.TYPE, Float.TYPE, Double.TYPE, Void.TYPE));
+    private static boolean isWrapperType(Type type) {
+        return WRAPPER_TYPES.contains(type);
+    }
 
     private static void printModifiers(PrintWriter writer, int mod) {
         if (Modifier.isPublic(mod)) {
@@ -24,7 +33,7 @@ public class Reflector {
     }
 
     private static void printTypes(Type[] types, PrintWriter writer, boolean names) {
-        printTypes((String[]) Arrays.stream(types).map(Type::getTypeName).toArray(), writer, names);
+        printTypes(Arrays.stream(types).map(Type::getTypeName).toArray(String[]::new), writer, names);
     }
 
     private static void printTypes(String[] types, PrintWriter writer, boolean names) {
@@ -46,7 +55,7 @@ public class Reflector {
         if (types.length > 0) {
             writer.print("<");
             printTypes(types, writer, false);
-            writer.print(">");
+            writer.print("> ");
         }
     }
 
@@ -73,8 +82,8 @@ public class Reflector {
         } else {
             writer.print(someClass.getSimpleName());
         }
-        printTypeParameters((String[]) Arrays.stream(someClass.getTypeParameters())
-                .map(TypeVariable::getName).toArray(), writer);
+        printTypeParameters(Arrays.stream(someClass.getTypeParameters())
+                .map(TypeVariable::getName).toArray(String[]::new), writer);
         writer.print(" ");
         if (superClass != null) {
             writer.print("extends ");
@@ -94,16 +103,15 @@ public class Reflector {
         for (var constructor: someClass.getDeclaredConstructors()) {
             writer.print(indent + "    ");
             printModifiers(writer, constructor.getModifiers());
-            printTypeParameters((String[]) Arrays.stream(constructor.getTypeParameters())
-                    .map(TypeVariable::getName).toArray(), writer);
-            writer.print(" ");
+            printTypeParameters(Arrays.stream(constructor.getTypeParameters())
+                    .map(TypeVariable::getName).toArray(String[]::new), writer);
             if (required) {
                 writer.print("SomeClass");
             } else {
                 writer.print(someClass.getSimpleName());
             }
             writer.print("(");
-            printTypes(constructor.getParameterTypes(), writer, true);
+            printTypes(constructor.getGenericParameterTypes(), writer, true);
             writer.print(") ");
             if (constructor.getExceptionTypes().length > 0) {
                 writer.print("throws ");
@@ -114,31 +122,31 @@ public class Reflector {
         for (var method: someClass.getDeclaredMethods()) {
             writer.print(indent + "    ");
             printModifiers(writer, method.getModifiers());
-            printTypeParameters((String[]) Arrays.stream(method.getTypeParameters())
-                    .map(TypeVariable::getName).toArray(), writer);
-            writer.print(" ");
+            printTypeParameters(Arrays.stream(method.getTypeParameters())
+                    .map(TypeVariable::getName).toArray(String[]::new), writer);
             writer.print(method.getGenericReturnType().getTypeName());
             writer.print(" ");
             writer.print(method.getName());
             writer.print("(");
-            printTypes(method.getParameterTypes(), writer, true);
+            printTypes(method.getGenericParameterTypes(), writer, true);
             writer.print(") ");
             if (method.getExceptionTypes().length > 0) {
                 writer.print("throws ");
                 printTypes(method.getExceptionTypes(), writer, false);
             }
             writer.println(" {");
-            writer.print(indent + "    return");
+            writer.print(indent + "        return");
             var ret = method.getGenericReturnType();
             if (ret.equals(Void.TYPE)) {
                 writer.println(";");
-            } else if (ret.getClass().isPrimitive()) {
+            } else if (isWrapperType(ret)) {
                 writer.println(" 0;");
-            }   else {
+            } else {
                 writer.println(" null;");
             }
-            writer.println(indent + "}");
+            writer.println(indent + "    }");
         }
+        writer.println(indent + "}");
     }
 
     public static void printStructure(Class<?> someClass) throws IOException {
