@@ -1,32 +1,36 @@
 package hse.hw06.reflector;
 
 import org.junit.jupiter.api.Test;
+
+import javax.tools.ToolProvider;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ExampleParent {
+class Example<E> {
     interface Interface<T> {
         void a();
         <U> int b(T x, U y);
-        <U> String c(T x, U y);
+        <U> Class<? super U> c(T x, U y);
     }
-}
-class Example<E> extends ExampleParent {
     private class Inner<F> extends Nested {
         Map<E, F> map;
-        public class Inner2<G> {
+        public class Inner2<G extends E> {
             G value;
         }
         Inner() {
             map.clear();
         }
     }
-    private class Nested {
+    private static class Nested<E> {
         E value;
         Nested() {}
         Nested(E value) {
@@ -42,16 +46,34 @@ class Example<E> extends ExampleParent {
         return a + b;
     }
     private E value;
-    public Example(E value) {
+    private List<? super E> s;
+    private Example(E value) {
         this.value = value;
     }
-    public <E, F> void doNothing(List<E> a, List<F> b) {}
+    public <F extends E, G extends F> void doNothing(List<G> a, List<F> b) {}
+    public Example<String> check() {
+        return new Example("qwerty");
+    }
 }
 
 class ReflectorTest {
+
     @Test
-    void print() throws IOException {
-        var instance = new Example<>("abc");
-        Reflector.printStructure(instance.getClass());
+    void shouldPrintDifferentMethodsAndFieldsFromExampleAndRenamedAndCompiledVersionOfClass()
+            throws IOException, ClassNotFoundException {
+        Reflector.printStructure(Class.forName("hse.hw06.reflector.Example"));
+        var file = new File[1];
+        file[0] = new File("SomeClass.java");
+        var compiler = ToolProvider.getSystemJavaCompiler();
+        var fileManager = compiler.getStandardFileManager(null, null, null);
+        var unit = fileManager.getJavaFileObjectsFromFiles(Arrays.asList(file));
+        compiler.getTask(null, fileManager, null, null, null, unit).call();
+        fileManager.close();
+        var cls = new File("");
+        URL url = cls.toURI().toURL();
+        URL[] urls = new URL[]{url};
+        var classLoader = new URLClassLoader(urls);
+        var loadedClass = classLoader.loadClass("SomeClass");
+        Reflector.diffClasses(Class.forName("hse.hw06.reflector.Example"), loadedClass);
     }
 }
