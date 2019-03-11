@@ -1,0 +1,43 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+mainClassName = 'hse.hw05.database.Main'
+
+sourceCompatibility = 11
+
+repositories {
+    mavenCentral()
+}
+
+jar {
+    baseName = 'PhoneBook'
+    manifest {
+        attributes(
+                'Main-Class': 'hse.hw05.database.Main'
+        )
+    }
+}
+
+dependencies {
+    compile group:'org.xerial', name:'sqlite-jdbc', version:'3.23.1'
+    compile 'com.intellij:annotations:+@jar'
+    testImplementation(
+            'org.junit.jupiter:junit-jupiter-api:5.1.0'
+    )
+    testRuntimeOnly(
+            'org.junit.jupiter:junit-jupiter-engine:5.1.0'
+    )
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events 'PASSED', 'FAILED', 'SKIPPED'
+    }
+}
+
+run {
+    standardInput = System.in
+}
