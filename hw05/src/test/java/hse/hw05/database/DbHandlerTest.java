@@ -15,7 +15,7 @@ class DbHandlerTest {
 
     @BeforeAll
     static void initAll() throws SQLException {
-        db = DbHandler.getInstance();
+        db = DbHandler.getInstance("jdbc:sqlite:PhoneBookTest.db");
     }
 
     @AfterEach

@@ -7,8 +7,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public class Ownership {
 
-    private String name;
-    private String phone;
+    private final @NotNull String name;
+    private final @NotNull String phone;
 
     public Ownership(@NotNull String name, @NotNull String phone) {
         this.name = name;

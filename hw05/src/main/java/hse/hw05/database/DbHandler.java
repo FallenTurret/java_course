@@ -15,19 +15,20 @@ import java.util.List;
  */
 public class DbHandler {
 
-    private static final String CON_STR = "jdbc:sqlite:PhoneBook.db";
-
+    private static String CON_STR;
     private static DbHandler instance = null;
 
     private Connection connection = null;
 
     /**
-     * Method to get instance of DbHandler class
+     * Method to get instance of DbHandler class with connection to database with given URL
+     * @param url database URL
      * @return DbHandler instance
      * @throws SQLException acquired from constructor
      */
-    public static DbHandler getInstance() throws SQLException {
+    public static DbHandler getInstance(String url) throws SQLException {
         if (instance == null) {
+            CON_STR = url;
             instance = new DbHandler();
         }
         return instance;
@@ -52,8 +53,10 @@ public class DbHandler {
      * @param phone person's phone
      */
     public void addOwnership(@NotNull String name, @NotNull String phone) {
-        try (var statement = connection.createStatement()) {
-            statement.execute("INSERT INTO Ownerships VALUES ('" + name + "', '" + phone + "')");
+        try (var statement = connection.prepareStatement("INSERT INTO Ownerships VALUES (?, ?)")) {
+            statement.setString(1, name);
+            statement.setString(2, phone);
+            statement.execute();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -65,10 +68,10 @@ public class DbHandler {
      * @return list of phones
      */
     public List<String> phonesByName(@NotNull String name) {
-        try (var statement = connection.createStatement()) {
+        try (var statement = connection.prepareStatement("SELECT Phone FROM Ownerships WHERE Name = ?")) {
             List<String> phones = new ArrayList<>();
-            var resultSet = statement.executeQuery(
-                    "SELECT Phone FROM Ownerships WHERE Name = '" + name + "'");
+            statement.setString(1, name);
+            var resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 phones.add(resultSet.getString("Phone"));
             }
@@ -85,10 +88,10 @@ public class DbHandler {
      * @return list of names
      */
     public List<String> namesByPhone(@NotNull String phone) {
-        try (var statement = connection.createStatement()) {
+        try (var statement = connection.prepareStatement("SELECT Name FROM Ownerships WHERE Phone = ?")) {
             List<String> names = new ArrayList<>();
-            var resultSet = statement.executeQuery(
-                    "SELECT Name FROM Ownerships WHERE Phone = '" + phone + "'");
+            statement.setString(1, phone);
+            var resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 names.add(resultSet.getString("Name"));
             }
@@ -108,8 +111,12 @@ public class DbHandler {
     public boolean deleteOwnership(@NotNull String name, @NotNull String phone) {
         try (var statement = connection.createStatement()) {
             var size = statement.executeQuery("SELECT COUNT(*) FROM Ownerships").getInt(1);
-            statement.execute(
-                    "DELETE FROM Ownerships WHERE Name = '" + name + "' AND Phone = '" + phone + "'");
+            try (var prepared = connection.prepareStatement(
+                    "DELETE FROM Ownerships WHERE Name = ? AND Phone = ?")) {
+                prepared.setString(1, name);
+                prepared.setString(2, phone);
+                prepared.execute();
+            }
             var newSize = statement.executeQuery("SELECT COUNT(*) FROM Ownerships").getInt(1);
             return size > newSize;
         } catch (SQLException e) {
@@ -125,10 +132,12 @@ public class DbHandler {
      * @param newName person's new name
      */
     public void changeName(@NotNull String name, @NotNull String phone, @NotNull String newName) {
-        try (var statement = connection.createStatement()) {
-            statement.execute(
-                    "UPDATE Ownerships SET Name = '" + newName + "' " +
-                            "WHERE Name = '" + name + "' AND Phone = '" + phone + "'");
+        try (var statement = connection.prepareStatement(
+                "UPDATE Ownerships SET Name = ? WHERE Name = ? AND Phone = ?")) {
+            statement.setString(1, newName);
+            statement.setString(2, name);
+            statement.setString(3, phone);
+            statement.execute();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -141,10 +150,12 @@ public class DbHandler {
      * @param newPhone person's new phone
      */
     public void changePhone(@NotNull String name, @NotNull String phone, @NotNull String newPhone) {
-        try (var statement = connection.createStatement()) {
-            statement.execute(
-                    "UPDATE Ownerships SET Phone = '" + newPhone +
-                            "' WHERE Name = '" + name + "' AND Phone = '" + phone + "'");
+        try (var statement = connection.prepareStatement(
+                "UPDATE Ownerships SET Phone = ? WHERE Name = ? AND Phone = ?")) {
+            statement.setString(1, newPhone);
+            statement.setString(2, name);
+            statement.setString(3, phone);
+            statement.execute();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -172,6 +183,9 @@ public class DbHandler {
         }
     }
 
+    /**
+     * deletes all records from table "Ownerships"
+     */
     public void deleteAllOwnerships() {
         try (var statement = connection.createStatement()) {
             statement.execute("DELETE FROM Ownerships");
