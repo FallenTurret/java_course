@@ -35,15 +35,9 @@ public class Reflector {
         }
     }
 
-    private static void printTypes(Type[] types, PrintWriter writer, boolean names, String prefix) {
-        printTypes(Arrays.stream(types).map(Type::getTypeName).map(s -> {
-            if (s.startsWith(prefix) && (s.length() == prefix.length() || s.charAt(prefix.length()) == '$'
-                    || s.charAt(prefix.length()) == '<')) {
-                return "SomeClass" + s.substring(prefix.length());
-            } else {
-                return s;
-            }
-        }).filter(s-> !s.contains("$")).toArray(String[]::new), writer, names);
+    private static void printTypes(Type[] types, PrintWriter writer, boolean names) {
+        printTypes(Arrays.stream(types).map(s -> s.getTypeName().replace("$", "."))
+                .toArray(String[]::new), writer, names);
     }
 
     private static void printTypes(String[] types, PrintWriter writer, boolean names) {
@@ -65,129 +59,112 @@ public class Reflector {
         if (types.length > 0) {
             writer.print("<");
             printTypes(Arrays.stream(types).map(t -> {
-                if (t.getBounds()[0].equals(Object.class)) return t.getName();
-                else return t.getName() + " extends " + t.getBounds()[0].getTypeName();
+                if (t.getBounds()[0].equals(Object.class)) {
+                    return t.getName();
+                } else {
+                    return t.getName() + " extends " + t.getBounds()[0].getTypeName();
+                }
             }).toArray(String[]::new), writer, false);
-            writer.print("> ");
+            writer.print(">");
         }
     }
 
-    private static void printClass(Class<?> someClass, PrintWriter writer, String indent, String prefix) {
-        boolean required = false;
-        if (indent.equals("0")) {
-            indent = "";
-            required = true;
-        }
-        var superClass = someClass.getSuperclass();
+    private static void printClassDeclaration(Class<?> someClass, PrintWriter writer, String indent) {
         writer.print(indent);
-
         printModifiers(writer, someClass.getModifiers());
-
         if (someClass.isInterface()) {
             writer.print("interface ");
         } else {
             writer.print("class ");
         }
-
-        if (required) {
-            writer.print("SomeClass");
-        } else {
-            writer.print(someClass.getSimpleName());
-        }
-
+        writer.print(someClass.getSimpleName());
         printTypeParameters(Arrays.stream(someClass.getTypeParameters())
                 .toArray(TypeVariable[]::new), writer);
-
+        writer.print(" ");
+        var superClass = someClass.getSuperclass();
         if (superClass != null && !(Object.class).equals(superClass)) {
             writer.print("extends ");
             writer.print(superClass.getSimpleName());
             writer.print(" ");
         }
-
+        if (someClass.getGenericInterfaces().length > 0) {
+            writer.print("implements ");
+            printTypes(Arrays.stream(someClass.getGenericInterfaces()).map(s -> s.getTypeName()
+                    .replace('$', '.')).toArray(String[]::new), writer, false);
+        }
         writer.println("{");
+    }
 
-        for (var classInside: someClass.getDeclaredClasses()) {
-            printClass(classInside, writer, indent + "    ", prefix);
+    private static void printExecutable(Executable method, PrintWriter writer, String indent) {
+        if (method.isSynthetic()) {
+            return;
         }
-
-        for (var field: someClass.getDeclaredFields()) {
-            if (field.isSynthetic()) {
-                continue;
-            }
-            writer.print(indent + "    ");
-            printModifiers(writer, field.getModifiers());
-            writer.print(field.getGenericType().getTypeName());
-            writer.println(" " + field.getName() + ";");
+        writer.print(indent + "    ");
+        printModifiers(writer, method.getModifiers());
+        printTypeParameters(Arrays.stream(method.getTypeParameters())
+                .toArray(TypeVariable[]::new), writer);
+        if (method.getTypeParameters().length > 0) {
+            writer.print(" ");
         }
-
-        for (var constructor: someClass.getDeclaredConstructors()) {
-            if (constructor.isSynthetic()) {
-                continue;
-            }
-            writer.print(indent + "    ");
-            printModifiers(writer, constructor.getModifiers());
-            printTypeParameters(Arrays.stream(constructor.getTypeParameters())
-                    .toArray(TypeVariable[]::new), writer);
-            if (required) {
-                writer.print("SomeClass");
-            } else {
-                writer.print(someClass.getSimpleName());
-            }
-            writer.print("(");
-            printTypes(constructor.getGenericParameterTypes(), writer, true, prefix);
-            writer.print(")");
-            if (constructor.getExceptionTypes().length > 0) {
-                writer.print(" throws ");
-                printTypes(constructor.getExceptionTypes(), writer, false, prefix);
-            }
-            if (!someClass.isInterface()) {
-                writer.println(" {}");
-            } else {
-                writer.println(";");
-            }
-        }
-
-        for (var method: someClass.getDeclaredMethods()) {
-            if (method.isSynthetic()) {
-                continue;
-            }
-            writer.print(indent + "    ");
-            printModifiers(writer, method.getModifiers());
-            printTypeParameters(Arrays.stream(method.getTypeParameters())
-                    .toArray(TypeVariable[]::new), writer);
-            var retType = method.getGenericReturnType().getTypeName();
-            if (retType.startsWith(prefix) &&
-                    (retType.length() == prefix.length() || retType.charAt(prefix.length()) == '$'
-                            || retType.charAt(prefix.length()) == '<')) {
-                retType = "SomeClass" + retType.substring(prefix.length());
-            }
-            writer.print(retType);
+        if (method instanceof Method) {
+            writer.print(((Method) method).getGenericReturnType().getTypeName());
             writer.print(" ");
             writer.print(method.getName());
-            writer.print("(");
-            printTypes(method.getGenericParameterTypes(), writer, true, prefix);
-            writer.print(")");
-            if (method.getExceptionTypes().length > 0) {
-                writer.print(" throws ");
-                printTypes(method.getExceptionTypes(), writer, false, prefix);
-            }
-            if (someClass.isInterface()) {
-                writer.println(";");
-                continue;
-            }
-            writer.println(" {");
-            writer.print(indent + "        return");
-            var ret = method.getGenericReturnType();
-            if (ret.equals(Void.TYPE)) {
-                writer.println(";");
-            } else if (isWrapperType(ret)) {
-                writer.println(" 0;");
-            } else {
-                writer.println(" null;");
-            }
-            writer.println(indent + "    }");
+        } else {
+            writer.print(method.getDeclaringClass().getSimpleName());
         }
+        writer.print("(");
+        printTypes(method.getGenericParameterTypes(), writer, true);
+        writer.print(")");
+        if (method.getExceptionTypes().length > 0) {
+            writer.print(" throws ");
+            printTypes(method.getExceptionTypes(), writer, false);
+        }
+        if (method.getDeclaringClass().isInterface()) {
+            writer.println(";");
+            return;
+        }
+        if (!(method instanceof Method)) {
+            writer.println(" {}");
+            return;
+        }
+        writer.println(" {");
+        writer.print(indent + "        return");
+        var ret = ((Method) method).getGenericReturnType();
+        if (ret.equals(Void.TYPE)) {
+            writer.println(";");
+        } else if (isWrapperType(ret)) {
+            writer.println(" 0;");
+        } else {
+            writer.println(" null;");
+        }
+        writer.println(indent + "    }");
+    }
 
+    private static void printField(Field field, PrintWriter writer, String indent) {
+        if (field.isSynthetic()) {
+            return;
+        }
+        writer.print(indent + "    ");
+        printModifiers(writer, field.getModifiers());
+        writer.print(field.getGenericType().getTypeName());
+        writer.println(" " + field.getName() + ";");
+    }
+
+    private static void printClass(Class<?> someClass, PrintWriter writer, String indent) {
+        printClassDeclaration(someClass, writer, indent);
+        for (var classInside: someClass.getDeclaredClasses()) {
+            printClass(classInside, writer, indent + "    ");
+        }
+        for (var field: someClass.getDeclaredFields()) {
+            printField(field, writer, indent);
+        }
+        for (var constructor: someClass.getDeclaredConstructors()) {
+            printExecutable(constructor, writer, indent);
+        }
+        for (var method: someClass.getDeclaredMethods()) {
+            printExecutable(method, writer, indent);
+        }
         writer.println(indent + "}");
     }
 
@@ -196,13 +173,18 @@ public class Reflector {
      * Printed version does not contain field initialization.
      * Instead of method implementation simple return statements are printed.
      * @param someClass class to print
-     * @throws IOException
      */
     public static void printStructure(Class<?> someClass) throws IOException {
-        var file = new File("SomeClass.java");
+        var packageName = someClass.getPackageName();
+        var file = new File(packageName.replace('.', '/')
+                + "/" + someClass.getSimpleName() + ".java");
         file.createNewFile();
         try (var writer = new PrintWriter(file)) {
-            printClass(someClass, writer, "0", someClass.getName());
+            if (!packageName.equals("")) {
+                writer.println("package " + packageName + ";");
+                writer.println();
+            }
+            printClass(someClass, writer, "");
         }
     }
 
@@ -211,11 +193,7 @@ public class Reflector {
         for (var c1: a.getDeclaredConstructors()) {
             boolean exist = false;
             for (var c2: b.getDeclaredConstructors()) {
-                if (c1.getName().equals(c2.getName()) &&
-                        Arrays.equals(c1.getTypeParameters(), c2.getTypeParameters()) &&
-                        Arrays.equals(c1.getGenericParameterTypes(), c2.getGenericParameterTypes()) &&
-                        Arrays.equals(c1.getGenericExceptionTypes(), c2.getGenericExceptionTypes()) &&
-                        c1.getModifiers() == c2.getModifiers()) {
+                if (c1.toGenericString().equals(c2.toGenericString())) {
                     exist = true;
                 }
             }
@@ -224,15 +202,10 @@ public class Reflector {
                 same = false;
             }
         }
-        for (var c1: a.getMethods()) {
+        for (var c1: a.getDeclaredMethods()) {
             boolean exist = false;
-            for (var c2: b.getMethods()) {
-                if (c1.getName().equals(c2.getName()) &&
-                        Arrays.equals(c1.getTypeParameters(), c2.getTypeParameters()) &&
-                        Arrays.equals(c1.getGenericParameterTypes(), c2.getGenericParameterTypes()) &&
-                        Arrays.equals(c1.getGenericExceptionTypes(), c2.getGenericExceptionTypes()) &&
-                        c1.getGenericReturnType().equals(c2.getGenericReturnType()) &&
-                        c1.getModifiers() == c2.getModifiers()) {
+            for (var c2: b.getDeclaredMethods()) {
+                if (c1.toGenericString().equals(c2.toGenericString())) {
                     exist = true;
                 }
             }
@@ -244,9 +217,7 @@ public class Reflector {
         for (var c1: a.getDeclaredFields()) {
             boolean exist = false;
             for (var c2: b.getDeclaredFields()) {
-                if (c1.getName().equals(c2.getName()) &&
-                        c1.getGenericType().equals(c2.getGenericType()) &&
-                        c1.getModifiers() == c2.getModifiers()) {
+                if (c1.toGenericString().equals(c2.toGenericString())) {
                     exist = true;
                 }
             }
@@ -265,10 +236,9 @@ public class Reflector {
      * @return true if there is no difference, otherwise false
      */
     public static boolean diffClasses(Class<?> a, Class<?> b) {
-        boolean same;
         System.out.println("Unique methods and fields in first class:");
         System.out.println("------------------------------------------");
-        same = unique(a, b);
+        boolean same = unique(a, b);
         System.out.println("------------------------------------------");
         System.out.println("Unique methods and fields in second class:");
         System.out.println("------------------------------------------");

@@ -13,13 +13,23 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class Example<E> {
     interface Interface<T> {
         void a();
         <U> int b(T x, U y);
         <U> Class<? super U> c(T x, U y);
+    }
+    public class Implementation implements Interface {
+        public void a() {
+        }
+        public Class c(Object x, Object y) {
+            return null;
+        }
+        public int b(Object x, Object y) {
+            return 0;
+        }
     }
     private class Inner<F> extends Nested {
         Map<E, F> map;
@@ -59,11 +69,12 @@ class Example<E> {
 class ReflectorTest {
 
     @Test
-    void shouldPrintDifferentMethodsAndFieldsFromExampleAndRenamedAndCompiledVersionOfClass()
+    void shouldPrintEmptyListOfDifferentMethodsAndFieldsFromExampleAndRenamedAndCompiledVersionOfClass()
             throws IOException, ClassNotFoundException {
-        Reflector.printStructure(Class.forName("hse.hw06.reflector.Example"));
+        var example = Class.forName("hse.hw06.reflector.Example");
+        Reflector.printStructure(example);
         var file = new File[1];
-        file[0] = new File("SomeClass.java");
+        file[0] = new File("hse/hw06/reflector/Example.java");
         var compiler = ToolProvider.getSystemJavaCompiler();
         var fileManager = compiler.getStandardFileManager(null, null, null);
         var unit = fileManager.getJavaFileObjectsFromFiles(Arrays.asList(file));
@@ -72,8 +83,9 @@ class ReflectorTest {
         var cls = new File("");
         URL url = cls.toURI().toURL();
         URL[] urls = new URL[]{url};
-        var classLoader = new URLClassLoader(urls);
-        var loadedClass = classLoader.loadClass("SomeClass");
-        Reflector.diffClasses(Class.forName("hse.hw06.reflector.Example"), loadedClass);
+        var classLoader = new URLClassLoader(urls, null);
+        var loadedClass = classLoader.loadClass("hse.hw06.reflector.Example");
+        assertNotSame(example, loadedClass);
+        assertTrue(Reflector.diffClasses(example, loadedClass));
     }
 }
