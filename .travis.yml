@@ -6,7 +6,5 @@ jdk:
 branches:
   - /.*/
 env:
-  - PROJECT_DIR=hw01
-  - PROJECT_DIR=hw02
-  - PROJECT_DIR=hw03
+  - PROJECT_DIR=hw07
 script: cd $PROJECT_DIR && ./gradlew check
