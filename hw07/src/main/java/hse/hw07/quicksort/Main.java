@@ -2,6 +2,9 @@ package hse.hw07.quicksort;
 
 import java.util.Random;
 
+/**
+ * Class, which is used to search array size, which is more efficient to sort by multi-thread quick-sort
+ */
 public class Main {
     public static void main(String[] args) {
         int leftBound = 0, rightBound = (int)5e6;
