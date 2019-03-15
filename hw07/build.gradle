@@ -1,11 +1,22 @@
 plugins {
     id 'java'
+    id 'application'
 }
 
 sourceCompatibility = 11
+mainClassName = 'hse.hw07.quicksort.Main'
 
 repositories {
     mavenCentral()
+}
+
+jar {
+    baseName = 'Quicksort'
+    manifest {
+        attributes(
+                'Main-Class': 'hse.hw07.quicksort.Main'
+        )
+    }
 }
 
 dependencies {
