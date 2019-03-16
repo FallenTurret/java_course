@@ -7,7 +7,8 @@ import java.util.Random;
  */
 public class Main {
     public static void main(String[] args) {
-        int leftBound = 0, rightBound = (int)5e6;
+        int leftBound = 0;
+        int rightBound = (int)5e6;
         while (leftBound + 1 < rightBound) {
             int n = (leftBound + rightBound) / 2;
             if (isEfficient(n)) {

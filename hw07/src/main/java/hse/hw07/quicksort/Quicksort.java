@@ -5,12 +5,14 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * Class, which implements single and multiple thread quick-sort
  */
-public class Quicksort extends Thread {
+public class Quicksort implements Runnable {
     private static final int THREADS = 10;
-    private static volatile int threads = 0;
+    private static final int ONE_THREAD_SIZE = 100;
+    private static int threads = 0;
     private static final Object lock = new Object();
     private int[] data;
-    private int left, right;
+    private int left;
+    private int right;
 
     /**
      * Constructor, which accepts array and borders. Only array elements within borders are sorted
@@ -53,6 +55,9 @@ public class Quicksort extends Thread {
         return right;
     }
 
+    /**
+     * Method, which calls single-thread quick-sort
+     */
     public void quicksort() {
         quicksort(left, right);
     }
@@ -75,6 +80,10 @@ public class Quicksort extends Thread {
 
     private void parallelQuicksort() {
         if (left + 1 < right) {
+            if (right - left <= ONE_THREAD_SIZE) {
+                quicksort();
+                return;
+            }
             int i = partition(left, right);
             Quicksort quicksort = null;
             synchronized (lock) {
@@ -84,11 +93,12 @@ public class Quicksort extends Thread {
                 }
             }
             if (quicksort != null) {
-                quicksort.start();
+                var thread = new Thread(quicksort);
+                thread.start();
                 left = i;
                 parallelQuicksort();
                 try {
-                    quicksort.join();
+                    thread.join();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } finally {
