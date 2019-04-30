@@ -6,6 +6,9 @@ import java.util.LinkedList;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+/**
+ * Thread pool with fixed number of working threads
+ */
 public class ThreadPoolImpl {
 
     private class LightFutureImpl<R> implements LightFuture<R> {
@@ -67,6 +70,10 @@ public class ThreadPoolImpl {
     private Thread[] threads;
     private LinkedList<LightFuture<?>> tasks = new LinkedList<>();
 
+    /**
+     * Constructs thread pool, runs threads, which take tasks from queue
+     * @param n number of working threads
+     */
     public ThreadPoolImpl(int n) {
         threads = new Thread[n];
         for (int i = 0; i < n; i++) {
@@ -95,7 +102,13 @@ public class ThreadPoolImpl {
         }
     }
 
-    <R> LightFuture<R> submit(@NotNull Supplier<R> task) {
+    /**
+     * adds new task in queue
+     * @param task task to execute
+     * @param <R> type of task's result
+     * @return LightFuture, which represents given tasks
+     */
+    public <R> LightFuture<R> submit(@NotNull Supplier<R> task) {
         var futureTask = new LightFutureImpl<>(task);
         synchronized (tasks) {
             tasks.add(futureTask);
@@ -104,7 +117,10 @@ public class ThreadPoolImpl {
         return futureTask;
     }
 
-    void shutdown() {
+    /**
+     * Stops all threads immediately, doesn't wait until current tasks are finished
+     */
+    public void shutdown() {
         for (int i = 0; i < threads.length; i++) {
             threads[i].interrupt();
         }
