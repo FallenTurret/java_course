@@ -1,5 +1,7 @@
 package hse.hw08.threadpool;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.LinkedList;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -11,7 +13,7 @@ public class ThreadPoolImpl {
         private volatile boolean ready = false;
         private Supplier<R> task;
         private R result;
-        private LinkedList<Function<R, LightFuture<?>>> toApply = new LinkedList<>();
+        private LinkedList<Function<R, Supplier<?>>> toApply = new LinkedList<>();
 
         public LightFutureImpl(Supplier<R> task) {
             this.task = task;
@@ -35,12 +37,13 @@ public class ThreadPoolImpl {
         }
 
         @Override
-        public void thenApply(Function<R, LightFuture<?>> function) {
+        public void thenApply(@NotNull Function<R, Supplier<?>> function) {
             synchronized (toApply) {
                 if (isReady()) {
                     var task = function.apply(result);
                     synchronized (tasks) {
-                        tasks.add(task);
+                        tasks.add(new LightFutureImpl<>(task));
+                        tasks.notifyAll();
                     }
                 } else {
                     toApply.add(function);
@@ -53,7 +56,7 @@ public class ThreadPoolImpl {
                 while (toApply.size() > 0) {
                     var task = toApply.poll().apply(result);
                     synchronized (tasks) {
-                        tasks.add(task);
+                        tasks.add(new LightFutureImpl<>(task));
                         tasks.notifyAll();
                     }
                 }
@@ -75,7 +78,7 @@ public class ThreadPoolImpl {
                             try {
                                 tasks.wait();
                             } catch (InterruptedException e) {
-                                e.printStackTrace();
+                                return;
                             }
                         }
                         curTask = tasks.poll();
@@ -84,6 +87,7 @@ public class ThreadPoolImpl {
                         curTask.get();
                     } catch (LightExecutionException e) {
                         e.printStackTrace();
+                        shutdown();
                     }
                 }
             });
@@ -91,7 +95,7 @@ public class ThreadPoolImpl {
         }
     }
 
-    <R> LightFuture<R> submit(Supplier<R> task) {
+    <R> LightFuture<R> submit(@NotNull Supplier<R> task) {
         var futureTask = new LightFutureImpl<>(task);
         synchronized (tasks) {
             tasks.add(futureTask);
