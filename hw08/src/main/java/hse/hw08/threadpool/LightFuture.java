@@ -3,11 +3,9 @@ package hse.hw08.threadpool;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * interface for tasks in thread pool
- * @param <R> type of task result
  */
 public interface LightFuture<R> {
 
@@ -25,8 +23,8 @@ public interface LightFuture<R> {
     R get() throws LightExecutionException;
 
     /**
-     * add new task in thread pool, which based on current task's result
-     * @param function takes type of task's result and returns new task represented by supplier
+     * Apply given function to result after computation
+     * @param function takes type of task's result and returns new result
      */
-    void thenApply(@NotNull Function<R, Supplier<?>> function);
+    <S> void thenApply(@NotNull Function<R, S> function);
 }

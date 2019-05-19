@@ -11,12 +11,29 @@ import java.util.function.Supplier;
  */
 public class ThreadPoolImpl {
 
+    private static class SupplierFromFunction<R, S> implements Supplier<S> {
+
+        private Function<R, S> function;
+        private R result;
+
+        public SupplierFromFunction(Function<R, S> function, R result) {
+            this.function = function;
+            this.result = result;
+        }
+
+        @Override
+        public S get() {
+            return function.apply(result);
+        }
+    }
+
     private class LightFutureImpl<R> implements LightFuture<R> {
 
         private volatile boolean ready = false;
+        private volatile boolean inProgress = false;
         private Supplier<R> task;
         private R result;
-        private LinkedList<Function<R, Supplier<?>>> toApply = new LinkedList<>();
+        private LinkedList<Function<R, ?>> toApply = new LinkedList<>();
 
         public LightFutureImpl(Supplier<R> task) {
             this.task = task;
@@ -30,9 +47,17 @@ public class ThreadPoolImpl {
         @Override
         public R get() throws LightExecutionException {
             try {
-                result = task.get();
-                ready = true;
-            } catch(Exception e) {
+                if (!inProgress) {
+                    synchronized (this) {
+                        while (!isReady()) wait();
+                    }
+                } else {
+                    inProgress = false;
+                    result = task.get();
+                    task = null;
+                    ready = true;
+                }
+            } catch (Exception e) {
                 throw new LightExecutionException(e.getMessage(), e.getCause());
             }
             applyAll();
@@ -40,15 +65,15 @@ public class ThreadPoolImpl {
         }
 
         @Override
-        public void thenApply(@NotNull Function<R, Supplier<?>> function) {
-            synchronized (toApply) {
-                if (isReady()) {
-                    var task = function.apply(result);
-                    synchronized (tasks) {
-                        tasks.add(new LightFutureImpl<>(task));
-                        tasks.notifyAll();
-                    }
-                } else {
+        public <S> void thenApply(@NotNull Function<R, S> function) {
+            if (isReady()) {
+                var task = new SupplierFromFunction<>(function, result);
+                synchronized (tasks) {
+                    tasks.add(new LightFutureImpl<>(task));
+                    tasks.notifyAll();
+                }
+            } else {
+                synchronized (toApply) {
                     toApply.add(function);
                 }
             }
@@ -57,7 +82,8 @@ public class ThreadPoolImpl {
         private void applyAll() {
             synchronized (toApply) {
                 while (toApply.size() > 0) {
-                    var task = toApply.poll().apply(result);
+                    var function = toApply.poll();
+                    var task = new SupplierFromFunction<>(function, result);
                     synchronized (tasks) {
                         tasks.add(new LightFutureImpl<>(task));
                         tasks.notifyAll();
@@ -68,7 +94,8 @@ public class ThreadPoolImpl {
     }
 
     private Thread[] threads;
-    private LinkedList<LightFuture<?>> tasks = new LinkedList<>();
+    private LinkedList<LightFutureImpl<?>> tasks = new LinkedList<>();
+    private LightExecutionException exception = null;
 
     /**
      * Constructs thread pool, runs threads, which take tasks from queue
@@ -79,7 +106,7 @@ public class ThreadPoolImpl {
         for (int i = 0; i < n; i++) {
             threads[i] = new Thread(() -> {
                 while (true) {
-                    LightFuture<?> curTask;
+                    LightFutureImpl<?> curTask;
                     synchronized (tasks) {
                         while (tasks.size() == 0) {
                             try {
@@ -91,9 +118,13 @@ public class ThreadPoolImpl {
                         curTask = tasks.poll();
                     }
                     try {
+                        curTask.inProgress = true;
                         curTask.get();
+                        synchronized (curTask) {
+                            curTask.notifyAll();
+                        }
                     } catch (LightExecutionException e) {
-                        e.printStackTrace();
+                        exception = e;
                         shutdown();
                     }
                 }
@@ -107,8 +138,12 @@ public class ThreadPoolImpl {
      * @param task task to execute
      * @param <R> type of task's result
      * @return LightFuture, which represents given tasks
+     * @throws LightExecutionException if one of the previous tasks finished with exception
      */
-    public <R> LightFuture<R> submit(@NotNull Supplier<R> task) {
+    public <R> LightFuture<R> submit(@NotNull Supplier<R> task) throws LightExecutionException {
+        if (exception != null) {
+            throw exception;
+        }
         var futureTask = new LightFutureImpl<>(task);
         synchronized (tasks) {
             tasks.add(futureTask);
