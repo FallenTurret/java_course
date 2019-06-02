@@ -11,10 +11,17 @@ import java.net.URLClassLoader;
 import java.util.LinkedList;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.jar.JarFile;
 
-public class MyJUnit {
+public final class MyJUnit {
 
+    protected static LinkedList<Object> instancesForTest = new LinkedList<>();
+
+    /**
+     * Loads test classes from file, path of which is given in first argument
+     * @param args first argument must be path to .class test file or to .jar, whih contains some .class test files
+     */
     public static void main(String[] args) {
         if (args.length < 1) {
             System.out.println("Specify test file");
@@ -23,7 +30,13 @@ public class MyJUnit {
         runAllTests(args[0]);
     }
 
+    /**
+     * Loads classes from given path and runs methods from those classes with annotation Test
+     * @param path path to .class test file or to .jar, whih contains some .class test files
+     */
     public static void runAllTests(String path) {
+        instancesForTest.clear();
+
         if (path.endsWith(".jar")) {
             try {
                 var jar = new JarFile(path);
@@ -38,7 +51,6 @@ public class MyJUnit {
                     var className = entry.getName().substring(0, entry.getName().length() - 6)
                             .replace('/', '.');
                     try {
-                        System.out.println(className + ":");
                         runClassTests(cl.loadClass(className));
                     } catch (ClassNotFoundException e) {
                         e.printStackTrace();
@@ -66,6 +78,10 @@ public class MyJUnit {
     }
 
     private static void runClassTests(Class<?> c) {
+        if (c.isAnnotation()) {
+            return;
+        }
+
         Object instance = null;
         for (var constructor: c.getDeclaredConstructors()) {
             try {
@@ -78,41 +94,31 @@ public class MyJUnit {
             System.out.println();
             return;
         }
+        instancesForTest.add(instance);
+
+        System.out.println(c.getName() + ":");
+        System.out.println();
+
         var threadPool = Executors.newCachedThreadPool();
-        var tasks = new LinkedList<Callable<String>>();
-        runBeforeOrAfter(c, instance, "BeforeClass");
+        var tasks = new LinkedList<Future<String>>();
+        runBeforeOrAfter(c, instance, BeforeClass.class);
         for (var method: c.getDeclaredMethods()) {
             var annotations = method.getDeclaredAnnotations();
+
             boolean run = false;
-            Object expected = null;
-            String reason = null;
+            Object expected = void.class;
+            String reason = "";
             for (var a: annotations) {
-                if (a.annotationType().getName().equals("Test")) {
-                    for (var annotationMethod: a.annotationType().getDeclaredMethods()) {
-                        if (annotationMethod.getName().equals("ignore")) {
-                            try {
-                                reason = (String) annotationMethod.invoke(instance, (Object[]) null);
-                            } catch (IllegalAccessException | InvocationTargetException e) {
-                                printLine(annotationMethod.getName() + ": error");
-                                System.out.println();
-                            }
-                        } else {
-                            run = true;
-                            if (annotationMethod.getName().equals("expected")) {
-                                try {
-                                    expected = annotationMethod.invoke(instance, (Object[]) null);
-                                } catch (IllegalAccessException | InvocationTargetException e) {
-                                    printLine(annotationMethod.getName() + ": error");
-                                    System.out.println();
-                                }
-                            }
-                        }
-                    }
+                if (a instanceof Test) {
+                    run = true;
+                    reason = ((Test) a).ignore();
+                    expected = ((Test) a).expected();
                 }
             }
-            if (reason != null) {
-                printLine("Test + " + method.getName() + " disabled: " + reason);
+            if (!reason.equals("")) {
+                printLine("Test '" + method.getName() + "' disabled: " + reason);
                 System.out.println();
+                continue;
             }
             if (run) {
                 Object finalInstance = instance;
@@ -120,60 +126,67 @@ public class MyJUnit {
                 var task = new Callable<String>() {
                     @Override
                     public String call() {
-                        runBeforeOrAfter(c, finalInstance, "Before");
-                        String result = "Test " + method.getName() + " ";
+                        runBeforeOrAfter(c, finalInstance, Before.class);
+                        String result = "Test '" + method.getName() + "' ";
                         var time = System.currentTimeMillis();
                         try {
+                            method.setAccessible(true);
                             method.invoke(finalInstance, (Object[]) null);
                             time = System.currentTimeMillis() - time;
-                            result += "passed\n";
-                        } catch (Exception e) {
+                            result += "passed\n\t";
+                        } catch (InvocationTargetException e) {
+                            var testException = e.getTargetException();
                             time = System.currentTimeMillis() - time;
-                            if (e.getClass().equals(finalExpected)) {
-                                result += "passed\n";
+                            if (testException.getClass().equals(finalExpected)) {
+                                result += "passed\n\t";
                             } else {
-                                result += "failed:\n";
-                                var pw = new PrintWriter(new StringWriter());
-                                e.printStackTrace(pw);
-                                result += pw.toString();
-                                result += "\n";
+                                result += "failed:\n\t";
+                                var sw = new StringWriter();
+                                var pw = new PrintWriter(sw);
+                                testException.printStackTrace(pw);
+                                result += sw.toString().replace("\n", "\n\t");
                             }
+                        } catch (IllegalAccessException e) {
+                            e.printStackTrace();
                         }
-                        runBeforeOrAfter(c, finalInstance, "After");
+                        runBeforeOrAfter(c, finalInstance, After.class);
                         result += "Time: ";
                         result += String.valueOf(time);
                         result += "ms";
                         return result;
                     }
                 };
-                threadPool.submit(task);
-                tasks.add(task);
+                tasks.add(threadPool.submit(task));
             }
         }
+        threadPool.shutdown();
         for (var task: tasks) {
             try {
-                printLine(task.call());
+                printLine(task.get());
             } catch (Exception e) {
                 e.printStackTrace();
             }
             System.out.println();
         }
-        runBeforeOrAfter(c, instance, "AfterClass");
+        runBeforeOrAfter(c, instance, AfterClass.class);
     }
 
-    private static void runBeforeOrAfter(Class<?> c, Object instance, String expected) {
+    private static void runBeforeOrAfter(Class<?> c, Object instance, Class<?> expected) {
         for (var method: c.getDeclaredMethods()) {
             var annotations = method.getDeclaredAnnotations();
             boolean run = false;
             for (var a: annotations) {
-                if (a.annotationType().getName().equals(expected)) {
+                if (expected.isAssignableFrom(a.getClass())) {
                     run = true;
                 }
             }
             if (run) {
                 try {
+                    method.setAccessible(true);
                     method.invoke(instance, (Object[]) null);
-                } catch (IllegalAccessException | InvocationTargetException e) {
+                } catch (InvocationTargetException e) {
+                    e.getTargetException().printStackTrace();
+                } catch (IllegalAccessException e) {
                     e.printStackTrace();
                 }
             }
@@ -181,6 +194,6 @@ public class MyJUnit {
     }
 
     private static void printLine(String s) {
-        System.out.println("    " + s);
+        System.out.println("\t" + s);
     }
 }
