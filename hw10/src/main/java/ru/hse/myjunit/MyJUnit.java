@@ -1,5 +1,7 @@
 package ru.hse.myjunit;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -34,7 +36,7 @@ public final class MyJUnit {
      * Loads classes from given path and runs methods from those classes with annotation Test
      * @param path path to .class test file or to .jar, whih contains some .class test files
      */
-    public static void runAllTests(String path) {
+    public static void runAllTests(@NotNull String path) {
         instancesForTest.clear();
 
         if (path.endsWith(".jar")) {

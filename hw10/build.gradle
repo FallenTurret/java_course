@@ -1,11 +1,22 @@
 plugins {
     id 'java'
+    id 'application'
 }
 
 sourceCompatibility = 11
+mainClassName = 'ru.hse.myjunit.MyJUnit'
 
 repositories {
     mavenCentral()
+}
+
+jar {
+    baseName = 'MyJUnit'
+    manifest {
+        attributes (
+            'Main-Class': 'ru.hse.myjunit.MyJUnit'
+        )
+    }
 }
 
 dependencies {
